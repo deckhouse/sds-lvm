@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -51,14 +50,6 @@ var (
 		sv1.AddToScheme,
 	}
 )
-
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, err := fmt.Fprint(w, "OK")
-	if err != nil {
-		klog.Fatalf("Error while generating healthcheck, err: %s", err.Error())
-	}
-}
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -97,15 +88,6 @@ func main() {
 	cl, err := client.New(kConfig, client.Options{
 		Scheme: scheme,
 	})
-
-	http.HandleFunc("/healthz", healthHandler)
-	http.HandleFunc("/readyz", healthHandler)
-	go func() {
-		err = http.ListenAndServe(cfgParams.HealthProbeBindAddress, nil)
-		if err != nil {
-			log.Error(err, "[main] create probes")
-		}
-	}()
 
 	drv, err := driver.NewDriver(cfgParams.CsiAddress, cfgParams.DriverName, cfgParams.Address, &cfgParams.NodeName, log, cl)
 	if err != nil {
